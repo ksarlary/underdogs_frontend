@@ -1,9 +1,8 @@
+import { useEffect, useState } from 'react'
 import './App.css'
 import underdogsLogo from './assets/underdogs-logo-header.png'
-
-const keycloakLoginUrl =
-  import.meta.env.VITE_KEYCLOAK_LOGIN_URL ||
-  'http://localhost:8083/realms/underdogs/protocol/openid-connect/auth?client_id=underdogs-frontend&redirect_uri=http%3A%2F%2Flocalhost%3A5174%2F&response_type=code&scope=openid'
+import { getCurrentUser } from './services/api'
+import keycloak, { initKeycloak, login, logout } from './services/keycloak'
 
 const tournaments = [
   {
@@ -45,6 +44,56 @@ const stats = [
 ]
 
 function App() {
+  const [authReady, setAuthReady] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [userError, setUserError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadSession() {
+      try {
+        const authenticated = await initKeycloak()
+
+        if (!isMounted) {
+          return
+        }
+
+        setIsAuthenticated(authenticated)
+        setAuthReady(true)
+
+        if (authenticated) {
+          const user = await getCurrentUser()
+
+          if (isMounted) {
+            setCurrentUser(user)
+          }
+        }
+      } catch (error) {
+        console.error(error)
+
+        if (isMounted) {
+          setUserError('Unable to load your account for now.')
+          setAuthReady(true)
+        }
+      }
+    }
+
+    loadSession()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const displayName =
+    currentUser?.name ||
+    currentUser?.username ||
+    currentUser?.email ||
+    keycloak.tokenParsed?.name ||
+    keycloak.tokenParsed?.preferred_username
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -58,14 +107,41 @@ function App() {
           <a href="#how-it-works">How it works</a>
         </nav>
 
-        <a className="auth-button" href={keycloakLoginUrl}>
-          Sign up / Log in
-        </a>
+        <div className="auth-area">
+          {isAuthenticated ? (
+            <>
+              <span className="user-chip">
+                {displayName ? `Hi, ${displayName}` : 'Account loaded'}
+              </span>
+              <button
+                className="auth-button auth-button-secondary"
+                type="button"
+                onClick={logout}
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <button
+              className="auth-button"
+              type="button"
+              onClick={login}
+              disabled={!authReady}
+            >
+              {authReady ? 'Sign up / Log in' : 'Loading...'}
+            </button>
+          )}
+        </div>
       </header>
 
       <main>
         <section className="hero-section" aria-labelledby="hero-title">
           <div className="hero-copy">
+            <img
+              className="hero-logo"
+              src={underdogsLogo}
+              alt="UnderDogs Esports Betting"
+            />
             <p className="eyebrow">Esports betting for sharp underdogs</p>
             <h1 id="hero-title">Back the play before the round starts.</h1>
             <p className="hero-text">
@@ -73,9 +149,9 @@ function App() {
               big esports moment with a fast Keycloak-secured account.
             </p>
             <div className="hero-actions">
-              <a className="primary-button" href={keycloakLoginUrl}>
+              <button className="primary-button" type="button" onClick={login}>
                 Start betting
-              </a>
+              </button>
               <a className="secondary-button" href="#tournaments">
                 View tournaments
               </a>
@@ -164,9 +240,16 @@ function App() {
             Create an account, scan active matches, and get ready to back your
             read when the pressure is highest.
           </p>
-          <a className="primary-button" href={keycloakLoginUrl}>
-            Join UnderDogs
-          </a>
+          {isAuthenticated ? (
+            <span className="cta-account">
+              {userError ||
+                (displayName ? `Ready, ${displayName}` : 'Account ready')}
+            </span>
+          ) : (
+            <button className="primary-button" type="button" onClick={login}>
+              Join UnderDogs
+            </button>
+          )}
         </section>
       </main>
 
@@ -178,7 +261,9 @@ function App() {
         <nav aria-label="Footer navigation">
           <a href="#tournaments">Tournaments</a>
           <a href="#how-it-works">Responsible play</a>
-          <a href={keycloakLoginUrl}>Account</a>
+          <button type="button" onClick={isAuthenticated ? logout : login}>
+            Account
+          </button>
         </nav>
         <p>18+ only. Play responsibly.</p>
       </footer>
