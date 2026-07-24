@@ -40,11 +40,24 @@ function splitDateTime(value: string | null | undefined): DateTimeParts {
     }
   }
 
-  const [date, time = ''] = value.split('T')
+  const parsedDate = new Date(value)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return {
+      date: '',
+      time: '',
+    }
+  }
+
+  const year = parsedDate.getFullYear()
+  const month = String(parsedDate.getMonth() + 1).padStart(2, '0')
+  const day = String(parsedDate.getDate()).padStart(2, '0')
+  const hours = String(parsedDate.getHours()).padStart(2, '0')
+  const minutes = String(parsedDate.getMinutes()).padStart(2, '0')
 
   return {
-    date: date ?? '',
-    time: time.slice(0, 5),
+    date: `${year}-${month}-${day}`,
+    time: `${hours}:${minutes}`,
   }
 }
 
@@ -170,7 +183,7 @@ function EditMatchDrawer({
         team2Id: formValues.team2Id,
         tournamentId: formValues.tournamentId,
         game,
-        scheduledAt: `${formValues.date}T${formValues.time}:00`,
+        scheduledAt: new Date(`${formValues.date}T${formValues.time}:00`).toISOString(),
       })
 
       await onMatchUpdated?.()

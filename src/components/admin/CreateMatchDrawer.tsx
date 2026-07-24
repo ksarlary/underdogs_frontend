@@ -118,7 +118,7 @@ function CreateMatchDrawer({
     setSubmitError('')
 
     try {
-      const scheduledAt = `${formValues.date}T${formValues.time}:00`
+      const scheduledAt = new Date(`${formValues.date}T${formValues.time}:00`).toISOString()
       const location = await createMatch({
         team1Id: formValues.team1Id,
         team2Id: formValues.team2Id,
