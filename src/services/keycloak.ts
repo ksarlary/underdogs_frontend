@@ -3,13 +3,14 @@ import Keycloak from 'keycloak-js'
 const keycloak = new Keycloak({
   url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8083',
   realm: import.meta.env.VITE_KEYCLOAK_REALM || 'underdogs',
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'underdogs-frontend',
+  clientId:
+    import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'underdogs-frontend',
 })
 
-let initPromise
+let initPromise: Promise<boolean> | null = null
 
-export function initKeycloak() {
-  if (!initPromise) {
+export function initKeycloak(): Promise<boolean> {
+  if (initPromise === null) {
     initPromise = keycloak.init({
       onLoad: 'check-sso',
       pkceMethod: 'S256',
@@ -21,25 +22,28 @@ export function initKeycloak() {
   return initPromise
 }
 
-export function login() {
+export function login(): Promise<void> {
   return keycloak.login({
     redirectUri: window.location.origin,
   })
 }
 
-export function logout() {
+export function logout(): Promise<void> {
   return keycloak.logout({
     redirectUri: window.location.origin,
   })
 }
 
-export async function getAccessToken() {
+export function isKeycloakAuthenticated(): boolean {
+  return keycloak.authenticated === true
+}
+
+export async function getAccessToken(): Promise<string | null> {
   if (!keycloak.authenticated) {
     return null
   }
 
   await keycloak.updateToken(30)
-  return keycloak.token
-}
 
-export default keycloak
+  return keycloak.token ?? null
+}

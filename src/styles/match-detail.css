@@ -1,0 +1,141 @@
+.detail-actions {
+  display: flex;
+  margin-bottom: 1.25rem;
+}
+
+.match-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.match-detail-team,
+.match-detail-center {
+  min-height: 13rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+}
+
+.match-detail-team span {
+  color: var(--text-primary);
+  font-size: clamp(1.7rem, 4vw, 3.5rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.match-detail-team strong {
+  margin-top: 1rem;
+  color: var(--accent);
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.roster-button {
+  width: fit-content;
+  margin-top: 1rem;
+}
+
+.team-odds-button,
+.team-odds-card {
+  display: grid;
+  width: min(100%, 18rem);
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.28);
+  font: inherit;
+  text-align: left;
+}
+
+.team-odds-button {
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.team-odds-card {
+  cursor: default;
+}
+
+.team-odds-button:hover,
+.team-odds-button:focus-visible,
+.team-odds-button-selected {
+  border-color: var(--accent);
+  background: rgba(255, 211, 46, 0.1);
+}
+
+.team-odds-button:hover,
+.team-odds-button:focus-visible {
+  transform: translateY(-2px);
+}
+
+.team-odds-button span,
+.team-odds-card span {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.team-odds-button strong,
+.team-odds-card strong {
+  margin-top: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.match-detail-team-away {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.match-detail-team-away .team-odds-button,
+.match-detail-team-away .team-odds-card {
+  text-align: right;
+}
+
+.match-detail-center {
+  min-width: 11rem;
+  align-items: center;
+  text-align: center;
+}
+
+.match-detail-center span {
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  color: #111;
+  background: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.match-detail-center small {
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.detail-meta-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.detail-meta-link:hover,
+.detail-meta-link:focus-visible {
+  color: var(--accent);
+}
+

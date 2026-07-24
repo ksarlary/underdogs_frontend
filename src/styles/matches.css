@@ -1,0 +1,188 @@
+.odds-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.odds-grid span,
+.odds-grid strong,
+.match-odds button {
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.odds-grid span,
+.odds-grid strong {
+  min-height: 3.25rem;
+  display: grid;
+  place-items: center;
+}
+
+.odds-grid span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.odds-grid strong {
+  color: var(--accent);
+  font-size: 1.2rem;
+}
+
+.detail-block {
+  padding-top: 1rem;
+}
+
+.detail-match-row {
+  grid-template-columns: 1fr minmax(12rem, auto);
+  align-items: center;
+}
+
+.match-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  color: var(--text-muted);
+}
+
+.match-card-meta strong {
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: #111;
+  background: var(--accent);
+  font-size: 0.73rem;
+  font-weight: 900;
+}
+
+.detail-match-action {
+  flex-shrink: 0;
+}
+
+.match-board {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.match-board-row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.65fr) minmax(18rem, 1.2fr) minmax(12rem, 0.65fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.match-board-game {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.match-board-game span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.match-board-game strong {
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: #111;
+  background: var(--accent);
+  font-size: 0.73rem;
+  font-weight: 900;
+}
+
+.match-board-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  color: var(--text-primary);
+  font-weight: 900;
+}
+
+.match-board-teams small {
+  color: var(--accent);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.match-board-teams span:last-child {
+  text-align: right;
+}
+
+.match-board-row time {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.match-board-action {
+  min-height: 2.4rem;
+  padding-inline: 0.9rem;
+}
+
+.match-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.match-row {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.match-row div:first-child {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.match-row span:last-child {
+  text-align: right;
+}
+
+.match-row small {
+  color: var(--accent);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.match-odds {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.match-odds button {
+  min-height: 2.5rem;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.match-odds button:hover,
+.match-odds button:focus-visible {
+  border-color: var(--accent);
+  background: rgba(255, 211, 46, 0.1);
+}
+

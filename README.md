@@ -1,29 +1,41 @@
 # UnderDogs Frontend
 
-React + Vite frontend for the UnderDogs esports betting project.
+Interface web React de la plateforme UnderDogs.
 
-## Requirements
+## Prérequis
 
-- Node.js 22+
+- Node.js
 - npm
+- API UnderDogs lancée localement
+- Keycloak lancé localement
 
-## Setup
+## Installation
 
 ```bash
 npm install
 ```
 
-## Development
+## Développement
 
 ```bash
 npm run dev
 ```
 
-The dev server runs on [http://localhost:5174](http://localhost:5174).
+L'application est disponible sur :
 
-## Checks
+```text
+http://localhost:5173
+```
+
+## Vérifications
 
 ```bash
 npm run lint
+npm run typecheck
+npm run test
 npm run build
 ```
+
+## Configuration
+
+Les variables d'environnement attendues sont décrites dans `.env.example`.

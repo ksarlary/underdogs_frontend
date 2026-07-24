@@ -1,0 +1,52 @@
+.not-found-page {
+  display: grid;
+  width: min(1180px, calc(100% - 2rem));
+  min-height: calc(100vh - 7rem);
+  margin: 0 auto;
+  padding: 4rem 0;
+  place-items: center;
+}
+
+.not-found-card {
+  display: grid;
+  width: min(100%, 44rem);
+  justify-items: center;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.not-found-code {
+  margin: 0;
+  color: var(--accent);
+  font-size: clamp(4.5rem, 15vw, 8rem);
+  font-weight: 900;
+  line-height: 0.8;
+}
+
+.not-found-card h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.not-found-message {
+  max-width: 35rem;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+

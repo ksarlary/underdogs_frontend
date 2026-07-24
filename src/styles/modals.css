@@ -1,0 +1,86 @@
+.player-card-content {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.player-card-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.player-flag-icon,
+.player-flag-fallback {
+  width: 4.4rem;
+  height: 3.1rem;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+}
+
+.player-flag-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.24);
+  font-weight: 900;
+}
+
+.player-country-code {
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.team-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.roster-modal {
+  width: min(840px, 100%);
+  max-height: min(720px, calc(100vh - 2rem));
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 211, 46, 0.13), transparent 18rem),
+    #080808;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.55);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.9rem, 5vw, 3.8rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
