@@ -7,6 +7,7 @@ export type Bet = {
   team2Name: string
   selectedTeamId: string
   selectedTeamName: string
+  username: string
   amount: number
   coefficient: number
   potentialGain: number

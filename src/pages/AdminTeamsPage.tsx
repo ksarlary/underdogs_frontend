@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import TeamDrawer from '../components/admin/TeamDrawer'
 import EmptyState from '../components/shared/EmptyState'
 import ErrorState from '../components/shared/ErrorState'
 import LoadingState from '../components/shared/LoadingState'
-import { getTeams } from '../services/teams'
+import Pagination from '../components/shared/Pagination'
+import { getTeamStats, getTeams } from '../services/teams'
 import type { Game } from '../types/common'
 import type { TeamSummary } from '../types/team'
 import { getGameLabel } from '../utils/displayLabels'
@@ -26,39 +27,37 @@ const teamFilters: TeamFilter[] = [
 function AdminTeamsPage() {
   const [teams, setTeams] = useState<TeamSummary[]>([])
   const [selectedGame, setSelectedGame] = useState<TeamFilterStatus>('ALL')
+  const [page, setPage] = useState<number>(0)
+  const [totalPages, setTotalPages] = useState<number>(0)
+  const [stats, setStats] = useState<Record<Game, number> | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] =
     useState<boolean>(false)
   const [selectedTeamToEdit, setSelectedTeamToEdit] =
     useState<TeamSummary | null>(null)
-
-  async function refreshTeams(): Promise<void> {
-    try {
-      const data = await getTeams()
-      setTeams(data)
-      setError('')
-    } catch (loadError: unknown) {
-      console.error(loadError)
-      setError('La liste des équipes n’a pas pu être rechargée.')
-    }
-  }
+  const [reloadToken, setReloadToken] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadTeams(): Promise<void> {
+      setIsLoading(true)
+
       try {
-        const data = await getTeams()
+        const data = await getTeams({
+          game: selectedGame === 'ALL' ? undefined : selectedGame,
+          page,
+        })
 
         if (isMounted) {
-          setTeams(data)
+          setTeams(data.content)
+          setTotalPages(data.totalPages)
           setError('')
         }
       } catch (loadError: unknown) {
-        console.error(loadError)
-
         if (isMounted) {
+          console.error(loadError)
           setError('Impossible de charger les équipes pour le moment.')
         }
       } finally {
@@ -73,52 +72,57 @@ function AdminTeamsPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [selectedGame, page, reloadToken])
 
-  const visibleTeams = useMemo(() => {
-    const sortedTeams = [...teams].sort((first, second) => {
-      const gameComparison = getGameLabel(first.game).localeCompare(
-        getGameLabel(second.game),
-        'fr-FR',
-      )
+  useEffect(() => {
+    let isMounted = true
 
-      if (gameComparison !== 0) {
-        return gameComparison
+    async function loadStats(): Promise<void> {
+      try {
+        const data = await getTeamStats()
+
+        if (isMounted) {
+          setStats(data)
+        }
+      } catch (statsError: unknown) {
+        console.error(statsError)
       }
-
-      return first.name.localeCompare(second.name, 'fr-FR')
-    })
-
-    if (selectedGame === 'ALL') {
-      return sortedTeams
     }
 
-    return sortedTeams.filter((team) => team.game === selectedGame)
-  }, [selectedGame, teams])
+    void loadStats()
 
-  const teamStats = useMemo(() => {
-    const countByGame = (game: Game): number =>
-      teams.filter((team) => team.game === game).length
+    return () => {
+      isMounted = false
+    }
+  }, [reloadToken])
 
-    return [
-      {
-        label: 'Total',
-        value: teams.length,
-      },
-      {
-        label: 'League of Legends',
-        value: countByGame('LEAGUE_OF_LEGENDS'),
-      },
-      {
-        label: 'Valorant',
-        value: countByGame('VALORANT'),
-      },
-      {
-        label: 'Counter-Strike 2',
-        value: countByGame('COUNTER_STRIKE'),
-      },
-    ]
-  }, [teams])
+  function handleTeamSaved(): void {
+    setReloadToken((token) => token + 1)
+  }
+
+  function handleGameFilterChange(game: TeamFilterStatus): void {
+    setSelectedGame(game)
+    setPage(0)
+  }
+
+  const teamStats = [
+    {
+      label: 'Total',
+      value: stats ? Object.values(stats).reduce((total, count) => total + count, 0) : 0,
+    },
+    {
+      label: 'League of Legends',
+      value: stats?.LEAGUE_OF_LEGENDS ?? 0,
+    },
+    {
+      label: 'Valorant',
+      value: stats?.VALORANT ?? 0,
+    },
+    {
+      label: 'Counter-Strike 2',
+      value: stats?.COUNTER_STRIKE ?? 0,
+    },
+  ]
 
   return (
     <>
@@ -167,7 +171,7 @@ function AdminTeamsPage() {
                   }
                   type="button"
                   aria-pressed={selectedGame === filter.value}
-                  onClick={() => setSelectedGame(filter.value)}
+                  onClick={() => handleGameFilterChange(filter.value)}
                 >
                   {filter.label}
                 </button>
@@ -186,17 +190,13 @@ function AdminTeamsPage() {
               </div>
 
               {teams.length === 0 ? (
-                <EmptyState message="Aucune équipe disponible." variant="panel" />
-              ) : null}
-
-              {teams.length > 0 && visibleTeams.length === 0 ? (
                 <EmptyState
                   message="Aucune équipe ne correspond à ce filtre."
                   variant="panel"
                 />
               ) : null}
 
-              {visibleTeams.length > 0 ? (
+              {teams.length > 0 ? (
                 <div className="admin-table-wrapper">
                   <table className="admin-table">
                     <thead>
@@ -209,7 +209,7 @@ function AdminTeamsPage() {
                     </thead>
 
                     <tbody>
-                      {visibleTeams.map((team) => (
+                      {teams.map((team) => (
                         <tr key={team.id}>
                           <td>
                             <strong>{team.name}</strong>
@@ -233,6 +233,8 @@ function AdminTeamsPage() {
                   </table>
                 </div>
               ) : null}
+
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
             </section>
           </>
         )}
@@ -242,14 +244,14 @@ function AdminTeamsPage() {
         isOpen={isCreateDrawerOpen}
         team={null}
         onClose={() => setIsCreateDrawerOpen(false)}
-        onTeamSaved={refreshTeams}
+        onTeamSaved={handleTeamSaved}
       />
 
       <TeamDrawer
         isOpen={Boolean(selectedTeamToEdit)}
         team={selectedTeamToEdit}
         onClose={() => setSelectedTeamToEdit(null)}
-        onTeamSaved={refreshTeams}
+        onTeamSaved={handleTeamSaved}
       />
     </>
   )

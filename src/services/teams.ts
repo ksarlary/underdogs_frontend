@@ -1,3 +1,5 @@
+import type { Game } from '../types/common'
+import type { PageResponse } from '../types/pagination'
 import type {
   CreateTeamRequest,
   TeamDetail,
@@ -6,11 +8,25 @@ import type {
 } from '../types/team'
 import {
   apiFetch,
+  authenticatedApiFetch,
   authenticatedApiRequest,
+  withQuery,
 } from './httpClient'
 
-export function getTeams(): Promise<TeamSummary[]> {
-  return apiFetch<TeamSummary[]>('/api/v1/teams')
+export type TeamListParams = {
+  game?: Game | undefined
+  page?: number
+  size?: number
+}
+
+export function getTeams(
+  params: TeamListParams = {},
+): Promise<PageResponse<TeamSummary>> {
+  return apiFetch<PageResponse<TeamSummary>>(withQuery('/api/v1/teams', params))
+}
+
+export function getTeamStats(): Promise<Record<Game, number>> {
+  return authenticatedApiFetch<Record<Game, number>>('/api/v1/teams/stats')
 }
 
 export function getTeamById(id: string): Promise<TeamDetail> {

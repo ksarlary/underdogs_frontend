@@ -5,6 +5,8 @@ export type TournamentSummary = {
   id: string
   name: string
   game: Game
+  startDate: string
+  endDate: string
 }
 
 export type TournamentDetail = {

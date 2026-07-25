@@ -15,7 +15,7 @@ export function initKeycloak(): Promise<boolean> {
       onLoad: 'check-sso',
       pkceMethod: 'S256',
       checkLoginIframe: false,
-      redirectUri: window.location.origin,
+      redirectUri: window.location.href,
     })
   }
 

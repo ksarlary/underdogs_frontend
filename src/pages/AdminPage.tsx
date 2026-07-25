@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CancelMatchDrawer from '../components/admin/CancelMatchDrawer'
 import CreateMatchDrawer from '../components/admin/CreateMatchDrawer'
@@ -7,7 +7,8 @@ import ResolveMatchDrawer from '../components/admin/ResolveMatchDrawer'
 import EmptyState from '../components/shared/EmptyState'
 import ErrorState from '../components/shared/ErrorState'
 import LoadingState from '../components/shared/LoadingState'
-import { getMatches } from '../services/matches'
+import Pagination from '../components/shared/Pagination'
+import { getMatchStats, getMatches } from '../services/matches'
 import type { MatchStatus } from '../types/common'
 import type { MatchSummary } from '../types/match'
 import {
@@ -29,13 +30,6 @@ const matchFilters: MatchFilter[] = [
   { value: 'FINISHED', label: 'Terminés' },
   { value: 'CANCELLED', label: 'Annulés' },
 ]
-
-const matchStatusPriority: Record<MatchStatus, number> = {
-  LIVE: 0,
-  SCHEDULED: 1,
-  FINISHED: 2,
-  CANCELLED: 3,
-}
 
 function getDateTimestamp(value: string | null | undefined): number {
   if (!value) {
@@ -71,25 +65,6 @@ function getStatusClassName(status: MatchStatus): string {
   return `admin-status admin-status-${status.toLowerCase()}`
 }
 
-function compareMatches(firstMatch: MatchSummary, secondMatch: MatchSummary): number {
-  const priorityDifference =
-    matchStatusPriority[firstMatch.status] -
-    matchStatusPriority[secondMatch.status]
-
-  if (priorityDifference !== 0) {
-    return priorityDifference
-  }
-
-  const firstTimestamp = getDateTimestamp(firstMatch.scheduledAt)
-  const secondTimestamp = getDateTimestamp(secondMatch.scheduledAt)
-
-  if (firstMatch.status === 'FINISHED' || firstMatch.status === 'CANCELLED') {
-    return secondTimestamp - firstTimestamp
-  }
-
-  return firstTimestamp - secondTimestamp
-}
-
 function canResolveMatch(match: MatchSummary): boolean {
   return match.status === 'LIVE'
 }
@@ -106,6 +81,9 @@ function AdminPage() {
   const [matches, setMatches] = useState<MatchSummary[]>([])
   const [selectedStatus, setSelectedStatus] =
     useState<MatchFilterStatus>('ALL')
+  const [page, setPage] = useState<number>(0)
+  const [totalPages, setTotalPages] = useState<number>(0)
+  const [stats, setStats] = useState<Record<MatchStatus, number> | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState<boolean>(false)
@@ -115,33 +93,28 @@ function AdminPage() {
     useState<MatchSummary | null>(null)
   const [selectedMatchToCancel, setSelectedMatchToCancel] =
     useState<MatchSummary | null>(null)
-
-  async function refreshMatches(): Promise<void> {
-    try {
-      const data = await getMatches()
-      setMatches(data)
-      setError('')
-    } catch (loadError: unknown) {
-      console.error(loadError)
-      setError('La liste des matchs n’a pas pu être rechargée.')
-    }
-  }
+  const [reloadToken, setReloadToken] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadMatches(): Promise<void> {
+      setIsLoading(true)
+
       try {
-        const data = await getMatches()
+        const data = await getMatches({
+          status: selectedStatus === 'ALL' ? undefined : selectedStatus,
+          page,
+        })
 
         if (isMounted) {
-          setMatches(data)
+          setMatches(data.content)
+          setTotalPages(data.totalPages)
           setError('')
         }
       } catch (loadError: unknown) {
-        console.error(loadError)
-
         if (isMounted) {
+          console.error(loadError)
           setError('Impossible de charger les matchs pour le moment.')
         }
       } finally {
@@ -156,41 +129,57 @@ function AdminPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [selectedStatus, page, reloadToken])
 
-  const visibleMatches = useMemo(() => {
-    const sortedMatches = [...matches].sort(compareMatches)
+  useEffect(() => {
+    let isMounted = true
 
-    if (selectedStatus === 'ALL') {
-      return sortedMatches
+    async function loadStats(): Promise<void> {
+      try {
+        const data = await getMatchStats()
+
+        if (isMounted) {
+          setStats(data)
+        }
+      } catch (statsError: unknown) {
+        console.error(statsError)
+      }
     }
 
-    return sortedMatches.filter((match) => match.status === selectedStatus)
-  }, [matches, selectedStatus])
+    void loadStats()
 
-  const matchStats = useMemo(() => {
-    const countByStatus = (status: MatchStatus): number =>
-      matches.filter((match) => match.status === status).length
+    return () => {
+      isMounted = false
+    }
+  }, [reloadToken])
 
-    return [
-      {
-        label: 'Matchs à venir',
-        value: countByStatus('SCHEDULED'),
-      },
-      {
-        label: 'Matchs en direct',
-        value: countByStatus('LIVE'),
-      },
-      {
-        label: 'Matchs terminés',
-        value: countByStatus('FINISHED'),
-      },
-      {
-        label: 'Matchs annulés',
-        value: countByStatus('CANCELLED'),
-      },
-    ]
-  }, [matches])
+  function handleStatusFilterChange(status: MatchFilterStatus): void {
+    setSelectedStatus(status)
+    setPage(0)
+  }
+
+  function handleMatchChanged(): void {
+    setReloadToken((token) => token + 1)
+  }
+
+  const matchStats = [
+    {
+      label: 'Matchs à venir',
+      value: stats?.SCHEDULED ?? 0,
+    },
+    {
+      label: 'Matchs en direct',
+      value: stats?.LIVE ?? 0,
+    },
+    {
+      label: 'Matchs terminés',
+      value: stats?.FINISHED ?? 0,
+    },
+    {
+      label: 'Matchs annulés',
+      value: stats?.CANCELLED ?? 0,
+    },
+  ]
 
   return (
     <>
@@ -240,7 +229,7 @@ function AdminPage() {
                   }
                   type="button"
                   aria-pressed={selectedStatus === filter.value}
-                  onClick={() => setSelectedStatus(filter.value)}
+                  onClick={() => handleStatusFilterChange(filter.value)}
                 >
                   {filter.label}
                 </button>
@@ -259,17 +248,13 @@ function AdminPage() {
               </div>
 
               {matches.length === 0 ? (
-                <EmptyState message="Aucun match disponible." variant="panel" />
-              ) : null}
-
-              {matches.length > 0 && visibleMatches.length === 0 ? (
                 <EmptyState
                   message="Aucun match ne correspond à ce filtre."
                   variant="panel"
                 />
               ) : null}
 
-              {visibleMatches.length > 0 ? (
+              {matches.length > 0 ? (
                 <div className="admin-table-wrapper">
                   <table className="admin-table">
                     <thead>
@@ -282,7 +267,7 @@ function AdminPage() {
                     </thead>
 
                     <tbody>
-                      {visibleMatches.map((match) => (
+                      {matches.map((match) => (
                         <tr key={match.id}>
                           <td>
                             <strong>{match.team1Name} vs {match.team2Name}</strong>
@@ -344,6 +329,8 @@ function AdminPage() {
                   </table>
                 </div>
               ) : null}
+
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
             </section>
           </>
         )}
@@ -352,28 +339,28 @@ function AdminPage() {
       <CreateMatchDrawer
         isOpen={isCreateDrawerOpen}
         onClose={() => setIsCreateDrawerOpen(false)}
-        onMatchCreated={refreshMatches}
+        onMatchCreated={handleMatchChanged}
       />
 
       <EditMatchDrawer
         isOpen={Boolean(selectedMatchToEdit)}
         match={selectedMatchToEdit}
         onClose={() => setSelectedMatchToEdit(null)}
-        onMatchUpdated={refreshMatches}
+        onMatchUpdated={handleMatchChanged}
       />
 
       <ResolveMatchDrawer
         isOpen={Boolean(selectedMatchToResolve)}
         match={selectedMatchToResolve}
         onClose={() => setSelectedMatchToResolve(null)}
-        onMatchResolved={refreshMatches}
+        onMatchResolved={handleMatchChanged}
       />
 
       <CancelMatchDrawer
         isOpen={Boolean(selectedMatchToCancel)}
         match={selectedMatchToCancel}
         onClose={() => setSelectedMatchToCancel(null)}
-        onMatchCancelled={refreshMatches}
+        onMatchCancelled={handleMatchChanged}
       />
     </>
   )

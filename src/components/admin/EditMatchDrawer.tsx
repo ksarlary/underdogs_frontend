@@ -103,16 +103,16 @@ function EditMatchDrawer({
       try {
         const [matchData, teamsData, tournamentsData] = await Promise.all([
           getMatchById(matchId),
-          getTeams(),
-          getTournaments(),
+          getTeams({ size: 100 }),
+          getTournaments({ size: 100 }),
         ])
 
         if (isMounted) {
           const scheduledAt = splitDateTime(matchData.scheduledAt)
 
           setMatchDetails(matchData)
-          setTeams(teamsData)
-          setTournaments(tournamentsData)
+          setTeams(teamsData.content)
+          setTournaments(tournamentsData.content)
           setFormValues({
             game: matchData.game,
             tournamentId: matchData.tournamentId,

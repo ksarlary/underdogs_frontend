@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import BetCard from '../components/bets/BetCard'
 import EmptyState from '../components/shared/EmptyState'
 import ErrorState from '../components/shared/ErrorState'
 import LoadingState from '../components/shared/LoadingState'
+import Pagination from '../components/shared/Pagination'
 import { useCurrentUser } from '../contexts/useCurrentUser'
 import { getMyBets } from '../services/bets'
 import type { Bet } from '../types/bet'
@@ -33,12 +34,14 @@ function MyBetsPage() {
   } = useCurrentUser()
   const [bets, setBets] = useState<Bet[]>([])
   const [selectedStatus, setSelectedStatus] = useState<BetFilterStatus>('ALL')
+  const [page, setPage] = useState<number>(0)
+  const [totalPages, setTotalPages] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isAuthReady || !isAuthenticated || !currentUser) {
+    if (!isAuthReady || !isAuthenticated || !currentUser || currentUser.status === 'BLOCKED') {
       return
     }
 
@@ -50,13 +53,14 @@ function MyBetsPage() {
         setIsLoading(true)
         setError('')
 
-        const data = await getMyBets()
-        const sortedBets = [...data].sort(
-          (firstBet, secondBet) => new Date(secondBet.createdAt).getTime() - new Date(firstBet.createdAt).getTime(),
-        )
+        const data = await getMyBets({
+          status: selectedStatus === 'ALL' ? undefined : selectedStatus,
+          page,
+        })
 
         if (isMounted) {
-          setBets(sortedBets)
+          setBets(data.content)
+          setTotalPages(data.totalPages)
           setError('')
           setLoadedUserId(userId)
         }
@@ -78,15 +82,12 @@ function MyBetsPage() {
     return () => {
       isMounted = false
     }
-  }, [currentUser, isAuthReady, isAuthenticated])
+  }, [currentUser, isAuthReady, isAuthenticated, selectedStatus, page])
 
-  const visibleBets = useMemo(() => {
-    if (selectedStatus === 'ALL') {
-      return bets
-    }
-
-    return bets.filter((bet) => bet.status === selectedStatus)
-  }, [bets, selectedStatus])
+  function handleStatusFilterChange(status: BetFilterStatus): void {
+    setSelectedStatus(status)
+    setPage(0)
+  }
 
   const hasLoadedCurrentUserBets =
     currentUser !== null && loadedUserId === currentUser.id
@@ -133,6 +134,24 @@ function MyBetsPage() {
     )
   }
 
+  if (currentUser?.status === 'BLOCKED') {
+    return (
+      <section className="my-bets-page">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Compte</p>
+            <h1>Mes paris</h1>
+          </div>
+        </div>
+
+        <div className="empty-state">
+          <h2>Votre compte est bloqué.</h2>
+          <p>L'accès à vos paris n'est pas disponible pour un compte bloqué.</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="my-bets-page">
       <div className="section-heading">
@@ -150,7 +169,7 @@ function MyBetsPage() {
             className={selectedStatus === filter.value ? 'filter-button active' : 'filter-button'}
             type="button"
             aria-pressed={selectedStatus === filter.value}
-            onClick={() => setSelectedStatus(filter.value)}
+            onClick={() => handleStatusFilterChange(filter.value)}
           >
             {filter.label}
           </button>
@@ -163,7 +182,7 @@ function MyBetsPage() {
 
       {error ? <ErrorState message={error} /> : null}
 
-      {!showBetsLoading && !error && hasLoadedCurrentUserBets && bets.length === 0 ? (
+      {!showBetsLoading && !error && hasLoadedCurrentUserBets && bets.length === 0 && selectedStatus === 'ALL' ? (
         <div className="empty-state">
           <h2>Vous n'avez pas encore placé de pari.</h2>
           <Link className="primary-button" to="/matches">
@@ -172,16 +191,20 @@ function MyBetsPage() {
         </div>
       ) : null}
 
-      {!showBetsLoading && !error && hasLoadedCurrentUserBets && bets.length > 0 && visibleBets.length === 0 ? (
+      {!showBetsLoading && !error && hasLoadedCurrentUserBets && bets.length === 0 && selectedStatus !== 'ALL' ? (
         <EmptyState message="Aucun pari ne correspond à ce filtre." />
       ) : null}
 
-      {!showBetsLoading && !error && hasLoadedCurrentUserBets && visibleBets.length > 0 ? (
-        <div className="bet-card-list">
-          {visibleBets.map((bet) => (
-            <BetCard key={bet.id} bet={bet} />
-          ))}
-        </div>
+      {!showBetsLoading && !error && hasLoadedCurrentUserBets && bets.length > 0 ? (
+        <>
+          <div className="bet-card-list">
+            {bets.map((bet) => (
+              <BetCard key={bet.id} bet={bet} />
+            ))}
+          </div>
+
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       ) : null}
     </section>
   )

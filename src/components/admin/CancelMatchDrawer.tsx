@@ -79,8 +79,7 @@ function CancelMatchDrawer({
             <h2 id="cancel-match-title">Annuler le match</h2>
             <p>
               Cette action passera le match au statut{' '}
-              {getMatchStatusLabel('CANCELLED')}. Le backend remboursera les
-              paris associés.
+              {getMatchStatusLabel('CANCELLED')}. Les paris associés seront automatiquement remboursés.
             </p>
           </div>
 

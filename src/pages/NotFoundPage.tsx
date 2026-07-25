@@ -13,8 +13,7 @@ function NotFoundPage() {
         <h1 id="not-found-title">Page introuvable</h1>
 
         <p className="not-found-message">
-          Cette page n existe pas, a ete deplacee ou l adresse saisie est incorrecte.
-        </p>
+          La page que vous recherchez est introuvable.        </p>
 
         <div className="not-found-actions">
           <Link className="primary-button" to="/">

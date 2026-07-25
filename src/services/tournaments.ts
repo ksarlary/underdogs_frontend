@@ -1,3 +1,5 @@
+import type { Game } from '../types/common'
+import type { PageResponse } from '../types/pagination'
 import type {
   CreateTournamentRequest,
   TournamentDetail,
@@ -8,11 +10,26 @@ import {
   apiFetch,
   authenticatedApiFetch,
   authenticatedApiRequest,
+  withQuery,
 } from './httpClient'
 
-export function getTournaments(): Promise<TournamentSummary[]> {
-  return apiFetch<TournamentSummary[]>(
-    '/api/v1/tournaments',
+export type TournamentListParams = {
+  game?: Game | undefined
+  page?: number
+  size?: number
+}
+
+export function getTournaments(
+  params: TournamentListParams = {},
+): Promise<PageResponse<TournamentSummary>> {
+  return apiFetch<PageResponse<TournamentSummary>>(
+    withQuery('/api/v1/tournaments', params),
+  )
+}
+
+export function getTournamentStats(): Promise<Record<Game, number>> {
+  return authenticatedApiFetch<Record<Game, number>>(
+    '/api/v1/tournaments/stats',
   )
 }
 

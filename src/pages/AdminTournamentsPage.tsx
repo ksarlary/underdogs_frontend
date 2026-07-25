@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import TournamentDrawer from '../components/admin/TournamentDrawer'
 import EmptyState from '../components/shared/EmptyState'
 import ErrorState from '../components/shared/ErrorState'
 import LoadingState from '../components/shared/LoadingState'
-import { getTournaments } from '../services/tournaments'
+import Pagination from '../components/shared/Pagination'
+import { getTournamentStats, getTournaments } from '../services/tournaments'
 import type { Game } from '../types/common'
 import type { TournamentSummary } from '../types/tournament'
+import { formatDate } from '../utils/formatters'
 import { getGameLabel } from '../utils/displayLabels'
 
 type TournamentFilterStatus = Game | 'ALL'
@@ -28,39 +30,37 @@ function AdminTournamentsPage() {
   const [tournaments, setTournaments] = useState<TournamentSummary[]>([])
   const [selectedGame, setSelectedGame] =
     useState<TournamentFilterStatus>('ALL')
+  const [page, setPage] = useState<number>(0)
+  const [totalPages, setTotalPages] = useState<number>(0)
+  const [stats, setStats] = useState<Record<Game, number> | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] =
     useState<boolean>(false)
   const [selectedTournamentToEdit, setSelectedTournamentToEdit] =
     useState<TournamentSummary | null>(null)
-
-  async function refreshTournaments(): Promise<void> {
-    try {
-      const data = await getTournaments()
-      setTournaments(data)
-      setError('')
-    } catch (loadError: unknown) {
-      console.error(loadError)
-      setError('La liste des tournois n’a pas pu être rechargée.')
-    }
-  }
+  const [reloadToken, setReloadToken] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadTournaments(): Promise<void> {
+      setIsLoading(true)
+
       try {
-        const data = await getTournaments()
+        const data = await getTournaments({
+          game: selectedGame === 'ALL' ? undefined : selectedGame,
+          page,
+        })
 
         if (isMounted) {
-          setTournaments(data)
+          setTournaments(data.content)
+          setTotalPages(data.totalPages)
           setError('')
         }
       } catch (loadError: unknown) {
-        console.error(loadError)
-
         if (isMounted) {
+          console.error(loadError)
           setError('Impossible de charger les tournois pour le moment.')
         }
       } finally {
@@ -75,45 +75,57 @@ function AdminTournamentsPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [selectedGame, page, reloadToken])
 
-  const visibleTournaments = useMemo(() => {
-    const sortedTournaments = [...tournaments].sort((first, second) =>
-      first.name.localeCompare(second.name, 'fr-FR'),
-    )
+  useEffect(() => {
+    let isMounted = true
 
-    if (selectedGame === 'ALL') {
-      return sortedTournaments
+    async function loadStats(): Promise<void> {
+      try {
+        const data = await getTournamentStats()
+
+        if (isMounted) {
+          setStats(data)
+        }
+      } catch (statsError: unknown) {
+        console.error(statsError)
+      }
     }
 
-    return sortedTournaments.filter(
-      (tournament) => tournament.game === selectedGame,
-    )
-  }, [selectedGame, tournaments])
+    void loadStats()
 
-  const tournamentStats = useMemo(() => {
-    const countByGame = (game: Game): number =>
-      tournaments.filter((tournament) => tournament.game === game).length
+    return () => {
+      isMounted = false
+    }
+  }, [reloadToken])
 
-    return [
-      {
-        label: 'Total',
-        value: tournaments.length,
-      },
-      {
-        label: 'League of Legends',
-        value: countByGame('LEAGUE_OF_LEGENDS'),
-      },
-      {
-        label: 'Valorant',
-        value: countByGame('VALORANT'),
-      },
-      {
-        label: 'Counter-Strike 2',
-        value: countByGame('COUNTER_STRIKE'),
-      },
-    ]
-  }, [tournaments])
+  function handleGameFilterChange(game: TournamentFilterStatus): void {
+    setSelectedGame(game)
+    setPage(0)
+  }
+
+  function handleTournamentSaved(): void {
+    setReloadToken((token) => token + 1)
+  }
+
+  const tournamentStats = [
+    {
+      label: 'Total',
+      value: stats ? Object.values(stats).reduce((total, count) => total + count, 0) : 0,
+    },
+    {
+      label: 'League of Legends',
+      value: stats?.LEAGUE_OF_LEGENDS ?? 0,
+    },
+    {
+      label: 'Valorant',
+      value: stats?.VALORANT ?? 0,
+    },
+    {
+      label: 'Counter-Strike 2',
+      value: stats?.COUNTER_STRIKE ?? 0,
+    },
+  ]
 
   return (
     <>
@@ -166,7 +178,7 @@ function AdminTournamentsPage() {
                   }
                   type="button"
                   aria-pressed={selectedGame === filter.value}
-                  onClick={() => setSelectedGame(filter.value)}
+                  onClick={() => handleGameFilterChange(filter.value)}
                 >
                   {filter.label}
                 </button>
@@ -188,34 +200,35 @@ function AdminTournamentsPage() {
               </div>
 
               {tournaments.length === 0 ? (
-                <EmptyState message="Aucun tournoi disponible." variant="panel" />
-              ) : null}
-
-              {tournaments.length > 0 && visibleTournaments.length === 0 ? (
                 <EmptyState
                   message="Aucun tournoi ne correspond à ce filtre."
                   variant="panel"
                 />
               ) : null}
 
-              {visibleTournaments.length > 0 ? (
+              {tournaments.length > 0 ? (
                 <div className="admin-table-wrapper">
                   <table className="admin-table">
                     <thead>
                       <tr>
                         <th>Tournoi</th>
                         <th>Jeu</th>
+                        <th>Période</th>
                         <th>Action</th>
                       </tr>
                     </thead>
 
                     <tbody>
-                      {visibleTournaments.map((tournament) => (
+                      {tournaments.map((tournament) => (
                         <tr key={tournament.id}>
                           <td>
                             <strong>{tournament.name}</strong>
                           </td>
                           <td>{getGameLabel(tournament.game)}</td>
+                          <td>
+                            {formatDate(tournament.startDate)} –{' '}
+                            {formatDate(tournament.endDate)}
+                          </td>
                           <td>
                             <div className="admin-table-actions">
                               <Link
@@ -242,6 +255,8 @@ function AdminTournamentsPage() {
                   </table>
                 </div>
               ) : null}
+
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
             </section>
           </>
         )}
@@ -251,14 +266,14 @@ function AdminTournamentsPage() {
         isOpen={isCreateDrawerOpen}
         tournament={null}
         onClose={() => setIsCreateDrawerOpen(false)}
-        onTournamentSaved={refreshTournaments}
+        onTournamentSaved={handleTournamentSaved}
       />
 
       <TournamentDrawer
         isOpen={Boolean(selectedTournamentToEdit)}
         tournament={selectedTournamentToEdit}
         onClose={() => setSelectedTournamentToEdit(null)}
-        onTournamentSaved={refreshTournaments}
+        onTournamentSaved={handleTournamentSaved}
       />
     </>
   )

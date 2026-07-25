@@ -35,24 +35,32 @@ function formatDateTime(value: string): string {
 }
 
 function HomePage() {
-  const [matches, setMatches] = useState<MatchSummary[]>([])
+  const [liveMatches, setLiveMatches] = useState<MatchSummary[]>([])
+  const [liveCount, setLiveCount] = useState<number>(0)
+  const [upcomingMatches, setUpcomingMatches] = useState<MatchSummary[]>([])
+  const [upcomingCount, setUpcomingCount] = useState<number>(0)
   const [tournaments, setTournaments] = useState<TournamentSummary[]>([])
   const [isMatchesLoading, setIsMatchesLoading] = useState<boolean>(true)
   const [isTournamentsLoading, setIsTournamentsLoading] =
     useState<boolean>(true)
   const [matchesError, setMatchesError] = useState<string>('')
   const [tournamentsError, setTournamentsError] = useState<string>('')
-  const [currentTimestamp] = useState<number>(() => Date.now())
 
   useEffect(() => {
     let isMounted = true
 
     async function loadMatches(): Promise<void> {
       try {
-        const data = await getMatches()
+        const [liveData, upcomingData] = await Promise.all([
+          getMatches({ status: 'LIVE', size: 3 }),
+          getMatches({ status: 'SCHEDULED', size: 3 }),
+        ])
 
         if (isMounted) {
-          setMatches(data)
+          setLiveMatches(liveData.content)
+          setLiveCount(liveData.totalElements)
+          setUpcomingMatches(upcomingData.content)
+          setUpcomingCount(upcomingData.totalElements)
           setMatchesError('')
         }
       } catch (loadError: unknown) {
@@ -70,10 +78,10 @@ function HomePage() {
 
     async function loadTournaments(): Promise<void> {
       try {
-        const data = await getTournaments()
+        const data = await getTournaments({ size: 3 })
 
         if (isMounted) {
-          setTournaments(data.slice(0, 3))
+          setTournaments(data.content)
           setTournamentsError('')
         }
       } catch (loadError: unknown) {
@@ -98,42 +106,6 @@ function HomePage() {
       isMounted = false
     }
   }, [])
-
-  const liveMatches = useMemo(
-    () =>
-      matches
-        .filter((match) => match.status === 'LIVE')
-        .sort((firstMatch, secondMatch) => {
-          const firstTimestamp = getTimestamp(firstMatch.scheduledAt) ?? 0
-          const secondTimestamp = getTimestamp(secondMatch.scheduledAt) ?? 0
-
-          return firstTimestamp - secondTimestamp
-        }),
-    [matches],
-  )
-
-  const upcomingMatches = useMemo(
-    () =>
-      matches
-        .filter((match) => {
-          if (match.status !== 'SCHEDULED') {
-            return false
-          }
-
-          const timestamp = getTimestamp(match.scheduledAt)
-
-          return timestamp !== null && timestamp > currentTimestamp
-        })
-        .sort((firstMatch, secondMatch) => {
-          const firstTimestamp =
-            getTimestamp(firstMatch.scheduledAt) ?? Infinity
-          const secondTimestamp =
-            getTimestamp(secondMatch.scheduledAt) ?? Infinity
-
-          return firstTimestamp - secondTimestamp
-        }),
-    [currentTimestamp, matches],
-  )
 
   const nextScheduledMatch = upcomingMatches[0] ?? null
   const nextScheduledMatchId = nextScheduledMatch?.id ?? null
@@ -232,7 +204,7 @@ function HomePage() {
             <div className="stats-row home-stats">
               <div>
                 <strong>
-                  {matchStatsUnavailable ? '—' : liveMatches.length}
+                  {matchStatsUnavailable ? '—' : liveCount}
                 </strong>
 
                 <span>En direct</span>
@@ -240,7 +212,7 @@ function HomePage() {
 
               <div>
                 <strong>
-                  {matchStatsUnavailable ? '—' : upcomingMatches.length}
+                  {matchStatsUnavailable ? '—' : upcomingCount}
                 </strong>
 
                 <span>À venir</span>

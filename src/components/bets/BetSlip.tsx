@@ -198,8 +198,7 @@ function BetSlip({ matchId, selection, onClear }: BetSlipProps) {
             </div>
 
             <p className="page-status">
-                La cote et les gains affiches sont des estimations. Les valeurs definitives sont
-                calculees par le back-end lors de l enregistrement.
+                La cote et les gains affichés sont estimatifs. Les montants définitifs seront confirmés lors de l’enregistrement du pari.
             </p>
 
             {submitError && <p className="page-status">{submitError}</p>}

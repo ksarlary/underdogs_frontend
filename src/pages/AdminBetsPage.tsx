@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import BetStatusBadge from '../components/bets/BetStatusBadge'
 import EmptyState from '../components/shared/EmptyState'
 import ErrorState from '../components/shared/ErrorState'
 import LoadingState from '../components/shared/LoadingState'
-import { getBets } from '../services/bets'
+import Pagination from '../components/shared/Pagination'
+import { getBetStats, getBets } from '../services/bets'
 import { ApiError } from '../services/httpClient'
 import type { Bet } from '../types/bet'
 import type { BetStatus } from '../types/common'
@@ -39,6 +40,9 @@ function formatDate(value: string): string {
 function AdminBetsPage() {
   const [bets, setBets] = useState<Bet[]>([])
   const [selectedStatus, setSelectedStatus] = useState<BetFilterStatus>('ALL')
+  const [page, setPage] = useState<number>(0)
+  const [totalPages, setTotalPages] = useState<number>(0)
+  const [stats, setStats] = useState<Record<BetStatus, number> | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
 
@@ -46,14 +50,17 @@ function AdminBetsPage() {
     let isMounted = true
 
     async function loadBets(): Promise<void> {
+      setIsLoading(true)
+
       try {
-        const data = await getBets()
-        const sortedBets = [...data].sort(
-          (firstBet, secondBet) => new Date(secondBet.createdAt).getTime() - new Date(firstBet.createdAt).getTime(),
-        )
+        const data = await getBets({
+          status: selectedStatus === 'ALL' ? undefined : selectedStatus,
+          page,
+        })
 
         if (isMounted) {
-          setBets(sortedBets)
+          setBets(data.content)
+          setTotalPages(data.totalPages)
           setError('')
         }
       } catch (loadError: unknown) {
@@ -80,38 +87,43 @@ function AdminBetsPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [selectedStatus, page])
 
-  const visibleBets = useMemo(() => {
-    if (selectedStatus === 'ALL') {
-      return bets
+  useEffect(() => {
+    async function loadStats(): Promise<void> {
+      try {
+        setStats(await getBetStats())
+      } catch (statsError: unknown) {
+        console.error(statsError)
+      }
     }
 
-    return bets.filter((bet) => bet.status === selectedStatus)
-  }, [bets, selectedStatus])
+    void loadStats()
+  }, [])
 
-  const betStats = useMemo(() => {
-    const countByStatus = (status: BetStatus): number => bets.filter((bet) => bet.status === status).length
+  function handleStatusFilterChange(status: BetFilterStatus): void {
+    setSelectedStatus(status)
+    setPage(0)
+  }
 
-    return [
-      {
-        label: 'Paris en attente',
-        value: countByStatus('PENDING'),
-      },
-      {
-        label: 'Paris gagnés',
-        value: countByStatus('WON'),
-      },
-      {
-        label: 'Paris perdus',
-        value: countByStatus('LOST'),
-      },
-      {
-        label: 'Paris annulés',
-        value: countByStatus('CANCELLED'),
-      },
-    ]
-  }, [bets])
+  const betStats = [
+    {
+      label: 'Paris en attente',
+      value: stats?.PENDING ?? 0,
+    },
+    {
+      label: 'Paris gagnés',
+      value: stats?.WON ?? 0,
+    },
+    {
+      label: 'Paris perdus',
+      value: stats?.LOST ?? 0,
+    },
+    {
+      label: 'Paris annulés',
+      value: stats?.CANCELLED ?? 0,
+    },
+  ]
 
   return (
     <section className="admin-page" aria-labelledby="admin-bets-title">
@@ -150,7 +162,7 @@ function AdminBetsPage() {
                 }
                 type="button"
                 aria-pressed={selectedStatus === filter.value}
-                onClick={() => setSelectedStatus(filter.value)}
+                onClick={() => handleStatusFilterChange(filter.value)}
               >
                 {filter.label}
               </button>
@@ -166,23 +178,20 @@ function AdminBetsPage() {
             </div>
 
             {bets.length === 0 ? (
-              <EmptyState message="Aucun pari disponible." variant="panel" />
-            ) : null}
-
-            {bets.length > 0 && visibleBets.length === 0 ? (
               <EmptyState
                 message="Aucun pari ne correspond à ce filtre."
                 variant="panel"
               />
             ) : null}
 
-            {visibleBets.length > 0 ? (
+            {bets.length > 0 ? (
               <div className="admin-table-wrapper">
                 <table className="admin-table">
                   <thead>
                     <tr>
                       <th>Match</th>
                       <th>Sélection</th>
+                      <th>Parieur</th>
                       <th>Mise</th>
                       <th>Cote</th>
                       <th>Gain potentiel</th>
@@ -193,12 +202,13 @@ function AdminBetsPage() {
                   </thead>
 
                   <tbody>
-                    {visibleBets.map((bet) => (
+                    {bets.map((bet) => (
                       <tr key={bet.id}>
                         <td>
                           <strong>{bet.team1Name} vs {bet.team2Name}</strong>
                         </td>
                         <td>{bet.selectedTeamName}</td>
+                        <td>{bet.username}</td>
                         <td>{formatKibbles(bet.amount)}</td>
                         <td>x{bet.coefficient}</td>
                         <td>{formatKibbles(bet.potentialGain)}</td>
@@ -222,6 +232,8 @@ function AdminBetsPage() {
                 </table>
               </div>
             ) : null}
+
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </section>
         </>
       )}

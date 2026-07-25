@@ -1,3 +1,4 @@
+import type { Game, MatchStatus } from '../types/common'
 import type {
   CreateMatchRequest,
   MatchDetail,
@@ -5,14 +6,29 @@ import type {
   MatchSummary,
   UpdateMatchRequest,
 } from '../types/match'
+import type { PageResponse } from '../types/pagination'
 import {
   apiFetch,
   authenticatedApiFetch,
   authenticatedApiRequest,
+  withQuery,
 } from './httpClient'
 
-export function getMatches(): Promise<MatchSummary[]> {
-  return apiFetch<MatchSummary[]>('/api/v1/matches')
+export type MatchListParams = {
+  game?: Game | undefined
+  status?: MatchStatus | undefined
+  page?: number
+  size?: number
+}
+
+export function getMatches(
+  params: MatchListParams = {},
+): Promise<PageResponse<MatchSummary>> {
+  return apiFetch<PageResponse<MatchSummary>>(withQuery('/api/v1/matches', params))
+}
+
+export function getMatchStats(): Promise<Record<MatchStatus, number>> {
+  return authenticatedApiFetch<Record<MatchStatus, number>>('/api/v1/matches/stats')
 }
 
 export function getMatchById(id: string): Promise<MatchDetail> {

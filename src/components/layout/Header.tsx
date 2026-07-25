@@ -4,7 +4,9 @@ import { useCurrentUser } from '../../contexts/useCurrentUser'
 import { formatKibbles } from '../../utils/formatters'
 
 function Header() {
-  const { currentUser, isAuthenticated, isAuthReady, login, logout } = useCurrentUser()
+  const { currentUser, isAuthenticated, isAdmin, isAuthReady, login, logout } = useCurrentUser()
+  const isBlocked = currentUser?.status === 'BLOCKED'
+  const showBettorInfo = isAuthenticated && !isBlocked && !isAdmin
 
   function handleAuthClick(): void {
     if (isAuthenticated) {
@@ -25,15 +27,17 @@ function Header() {
         <NavLink to="/">Accueil</NavLink>
         <NavLink to="/tournaments">Tournois</NavLink>
         <NavLink to="/matches">Matchs</NavLink>
-        {isAuthenticated ? <NavLink to="/my-bets">Mes paris</NavLink> : null}
+        {showBettorInfo ? <NavLink to="/my-bets">Mes paris</NavLink> : null}
       </nav>
 
       <div className="auth-area">
         {isAuthenticated && currentUser ? (
           <>
-            <span className="kibbles-chip">
-              {formatKibbles(currentUser.kibblesBalance)}
-            </span>
+            {showBettorInfo && (
+              <span className="kibbles-chip">
+                {formatKibbles(currentUser.kibblesBalance)}
+              </span>
+            )}
 
             <span className="user-chip">Bonjour {currentUser.firstName || currentUser.username}</span>
           </>

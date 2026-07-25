@@ -61,13 +61,13 @@ function CreateMatchDrawer({
 
       try {
         const [teamsData, tournamentsData] = await Promise.all([
-          getTeams(),
-          getTournaments(),
+          getTeams({ size: 100 }),
+          getTournaments({ size: 100 }),
         ])
 
         if (isMounted) {
-          setTeams(teamsData)
-          setTournaments(tournamentsData)
+          setTeams(teamsData.content)
+          setTournaments(tournamentsData.content)
         }
       } catch (loadError: unknown) {
         console.error(loadError)

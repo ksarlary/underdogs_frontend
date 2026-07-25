@@ -222,8 +222,7 @@ function ResolveMatchDrawer({
             <p className="eyebrow">Résultat</p>
             <h2 id="resolve-match-title">Terminer le match</h2>
             <p>
-              Saisir le score final et le gagnant. Le backend résoudra ensuite
-              les paris liés à ce match.
+              Saisir le score final et le gagnant. Les paris associés au match seront ensuite automatiquement mis à jour.
             </p>
           </div>
 

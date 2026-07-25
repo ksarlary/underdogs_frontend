@@ -1,80 +1,77 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import Pagination from '../components/shared/Pagination'
 import EmptyState from '../components/shared/EmptyState'
 import ErrorState from '../components/shared/ErrorState'
 import LoadingState from '../components/shared/LoadingState'
 import TournamentCard from '../components/tournaments/TournamentCard'
 import { getTournaments } from '../services/tournaments'
+import type { Game } from '../types/common'
 import type { TournamentSummary } from '../types/tournament'
+
+type TournamentFilterStatus = Game | 'ALL'
+
+type TournamentFilter = {
+  value: TournamentFilterStatus
+  label: string
+}
+
+const tournamentFilters: TournamentFilter[] = [
+  { value: 'ALL', label: 'Tous' },
+  { value: 'LEAGUE_OF_LEGENDS', label: 'League of Legends' },
+  { value: 'VALORANT', label: 'Valorant' },
+  { value: 'COUNTER_STRIKE', label: 'Counter-Strike 2' },
+  { value: 'DOTA_2', label: 'Dota 2' },
+]
 
 function TournamentsPage() {
   const [tournaments, setTournaments] = useState<TournamentSummary[]>([])
+  const [selectedGame, setSelectedGame] = useState<TournamentFilterStatus>('ALL')
+  const [page, setPage] = useState<number>(0)
+  const [totalPages, setTotalPages] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
-  const requestIdRef = useRef<number>(0)
-
-  async function loadTournaments(): Promise<void> {
-    const requestId = requestIdRef.current + 1
-    requestIdRef.current = requestId
-
-    setIsLoading(true)
-    setError('')
-
-    try {
-      const data = await getTournaments()
-
-      if (requestId !== requestIdRef.current) {
-        return
-      }
-
-      setTournaments(data)
-    } catch (loadError: unknown) {
-      if (requestId !== requestIdRef.current) {
-        return
-      }
-
-      console.error(loadError)
-      setError('Impossible de charger les tournois pour le moment.')
-    } finally {
-      if (requestId === requestIdRef.current) {
-        setIsLoading(false)
-      }
-    }
-  }
+  const [reloadToken, setReloadToken] = useState<number>(0)
 
   useEffect(() => {
-    const requestId = requestIdRef.current + 1
-    requestIdRef.current = requestId
+    let isMounted = true
 
-    async function loadInitialTournaments(): Promise<void> {
+    async function loadTournaments(): Promise<void> {
+      setIsLoading(true)
+      setError('')
+
       try {
-        const data = await getTournaments()
+        const data = await getTournaments({
+          game: selectedGame === 'ALL' ? undefined : selectedGame,
+          page,
+        })
 
-        if (requestId !== requestIdRef.current) {
-          return
+        if (isMounted) {
+          setTournaments(data.content)
+          setTotalPages(data.totalPages)
         }
-
-        setTournaments(data)
-        setError('')
       } catch (loadError: unknown) {
-        if (requestId !== requestIdRef.current) {
-          return
+        if (isMounted) {
+          console.error(loadError)
+          setError('Impossible de charger les tournois pour le moment.')
         }
-
-        console.error(loadError)
-        setError('Impossible de charger les tournois pour le moment.')
       } finally {
-        if (requestId === requestIdRef.current) {
+        if (isMounted) {
           setIsLoading(false)
         }
       }
     }
 
-    void loadInitialTournaments()
+    void loadTournaments()
 
     return () => {
-      requestIdRef.current += 1
+      isMounted = false
     }
-  }, [])
+  }, [selectedGame, page, reloadToken])
+
+  function handleGameFilterChange(game: TournamentFilterStatus): void {
+    setSelectedGame(game)
+    setPage(0)
+  }
 
   return (
     <section className="tournaments-section" aria-labelledby="tournaments-title">
@@ -85,25 +82,48 @@ function TournamentsPage() {
         </div>
       </div>
 
+      <div className="bet-filters" aria-label="Filtres des tournois">
+        {tournamentFilters.map((filter) => (
+          <button
+            key={filter.value}
+            className={
+              selectedGame === filter.value ? 'filter-button active' : 'filter-button'
+            }
+            type="button"
+            aria-pressed={selectedGame === filter.value}
+            onClick={() => handleGameFilterChange(filter.value)}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading && <LoadingState message="Chargement des tournois..." />}
 
       {!isLoading && error && (
-        <ErrorState message={error} onRetry={() => void loadTournaments()} />
+        <ErrorState
+          message={error}
+          onRetry={() => setReloadToken((token) => token + 1)}
+        />
       )}
 
       {!isLoading && !error && tournaments.length === 0 && (
-        <EmptyState message="Aucun tournoi disponible." />
+        <EmptyState message="Aucun tournoi ne correspond à ce filtre." />
       )}
 
       {!isLoading && !error && tournaments.length > 0 && (
-        <div className="tournament-grid">
-          {tournaments.map((tournament) => (
-            <TournamentCard
-              key={tournament.id}
-              tournament={tournament}
-            />
-          ))}
-        </div>
+        <>
+          <div className="tournament-grid">
+            {tournaments.map((tournament) => (
+              <TournamentCard
+                key={tournament.id}
+                tournament={tournament}
+              />
+            ))}
+          </div>
+
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </section>
   )
