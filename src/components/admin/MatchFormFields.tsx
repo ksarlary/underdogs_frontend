@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react'
 import type { TeamSummary } from '../../types/team'
 import type { TournamentSummary } from '../../types/tournament'
+import { formatDate } from '../../utils/formatters'
 import { gameOptions, type MatchFormValues } from './matchFormOptions'
 
 type MatchFormFieldsProps = {
@@ -27,6 +28,10 @@ function MatchFormFields({
   const filteredTournaments = values.game
     ? tournaments.filter((tournament) => tournament.game === values.game)
     : []
+
+  const selectedTournament = filteredTournaments.find(
+    (tournament) => tournament.id === values.tournamentId,
+  )
 
   const team2Options = filteredTeams.filter(
     (team) => team.id !== values.team1Id,
@@ -67,6 +72,13 @@ function MatchFormFields({
           ))}
         </select>
       </label>
+
+      {selectedTournament ? (
+        <p className="page-status admin-drawer-message">
+          Période du tournoi : {formatDate(selectedTournament.startDate)} -{' '}
+          {formatDate(selectedTournament.endDate)}.
+        </p>
+      ) : null}
 
       <label>
         Équipe 1
@@ -110,6 +122,8 @@ function MatchFormFields({
           value={values.date}
           onChange={onFieldChange}
           disabled={disabled}
+          min={selectedTournament?.startDate}
+          max={selectedTournament?.endDate}
         />
       </label>
 

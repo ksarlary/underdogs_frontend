@@ -93,7 +93,7 @@ function AdminPage() {
     useState<MatchSummary | null>(null)
   const [selectedMatchToCancel, setSelectedMatchToCancel] =
     useState<MatchSummary | null>(null)
-  const [reloadToken, setReloadToken] = useState<number>(0)
+  const [reloadCounter, setReloadCounter] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
@@ -129,7 +129,7 @@ function AdminPage() {
     return () => {
       isMounted = false
     }
-  }, [selectedStatus, page, reloadToken])
+  }, [selectedStatus, page, reloadCounter])
 
   useEffect(() => {
     let isMounted = true
@@ -151,7 +151,7 @@ function AdminPage() {
     return () => {
       isMounted = false
     }
-  }, [reloadToken])
+  }, [reloadCounter])
 
   function handleStatusFilterChange(status: MatchFilterStatus): void {
     setSelectedStatus(status)
@@ -159,7 +159,7 @@ function AdminPage() {
   }
 
   function handleMatchChanged(): void {
-    setReloadToken((token) => token + 1)
+    setReloadCounter((counter) => counter + 1)
   }
 
   const matchStats = [

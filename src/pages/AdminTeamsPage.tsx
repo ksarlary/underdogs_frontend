@@ -36,7 +36,7 @@ function AdminTeamsPage() {
     useState<boolean>(false)
   const [selectedTeamToEdit, setSelectedTeamToEdit] =
     useState<TeamSummary | null>(null)
-  const [reloadToken, setReloadToken] = useState<number>(0)
+  const [reloadCounter, setReloadCounter] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
@@ -72,7 +72,7 @@ function AdminTeamsPage() {
     return () => {
       isMounted = false
     }
-  }, [selectedGame, page, reloadToken])
+  }, [selectedGame, page, reloadCounter])
 
   useEffect(() => {
     let isMounted = true
@@ -94,10 +94,10 @@ function AdminTeamsPage() {
     return () => {
       isMounted = false
     }
-  }, [reloadToken])
+  }, [reloadCounter])
 
   function handleTeamSaved(): void {
-    setReloadToken((token) => token + 1)
+    setReloadCounter((counter) => counter + 1)
   }
 
   function handleGameFilterChange(game: TeamFilterStatus): void {

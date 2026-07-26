@@ -30,7 +30,7 @@ function TournamentsPage() {
   const [totalPages, setTotalPages] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
-  const [reloadToken, setReloadToken] = useState<number>(0)
+  const [reloadCounter, setReloadCounter] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
@@ -66,7 +66,7 @@ function TournamentsPage() {
     return () => {
       isMounted = false
     }
-  }, [selectedGame, page, reloadToken])
+  }, [selectedGame, page, reloadCounter])
 
   function handleGameFilterChange(game: TournamentFilterStatus): void {
     setSelectedGame(game)
@@ -103,7 +103,7 @@ function TournamentsPage() {
       {!isLoading && error && (
         <ErrorState
           message={error}
-          onRetry={() => setReloadToken((token) => token + 1)}
+          onRetry={() => setReloadCounter((counter) => counter + 1)}
         />
       )}
 
