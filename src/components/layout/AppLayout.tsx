@@ -54,10 +54,8 @@ function AppLayout() {
         >
           <strong>Compte bloqué</strong>
 
-          <span>
-            {currentUser.blockedReason ||
-              'Vous pouvez consulter le site, mais les actions protégées ne sont pas disponibles.'}
-          </span>
+          <span>{currentUser.blockedReason}</span>
+
         </div>
       ) : null}
 

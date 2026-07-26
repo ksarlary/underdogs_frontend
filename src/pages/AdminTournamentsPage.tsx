@@ -39,7 +39,7 @@ function AdminTournamentsPage() {
     useState<boolean>(false)
   const [selectedTournamentToEdit, setSelectedTournamentToEdit] =
     useState<TournamentSummary | null>(null)
-  const [reloadToken, setReloadToken] = useState<number>(0)
+  const [reloadCounter, setReloadCounter] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
@@ -75,7 +75,7 @@ function AdminTournamentsPage() {
     return () => {
       isMounted = false
     }
-  }, [selectedGame, page, reloadToken])
+  }, [selectedGame, page, reloadCounter])
 
   useEffect(() => {
     let isMounted = true
@@ -97,7 +97,7 @@ function AdminTournamentsPage() {
     return () => {
       isMounted = false
     }
-  }, [reloadToken])
+  }, [reloadCounter])
 
   function handleGameFilterChange(game: TournamentFilterStatus): void {
     setSelectedGame(game)
@@ -105,7 +105,7 @@ function AdminTournamentsPage() {
   }
 
   function handleTournamentSaved(): void {
-    setReloadToken((token) => token + 1)
+    setReloadCounter((counter) => counter + 1)
   }
 
   const tournamentStats = [
