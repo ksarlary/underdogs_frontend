@@ -138,7 +138,7 @@ function AdminBetsPage() {
         </div>
       </div>
 
-      {isLoading && <LoadingState message="Chargement des paris..." />}
+      {isLoading && <LoadingState message="Chargements des paris..." />}
 
       {!isLoading && error && <ErrorState message={error} />}
 
